@@ -1,0 +1,33 @@
+version: '3.7'
+networks:
+  wdyc:
+    name: wdyc
+  default:
+    driver: wdyc
+
+services:
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - 27017:27017
+    networks:
+      wdyc:
+        aliases:
+          - "mongo"
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8600:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: admin
+      ME_CONFIG_MONGODB_URL: mongodb://root:admin@mongo/
+    networks:
+      wdyc:
+        aliases:
+          - "mongo-express"
