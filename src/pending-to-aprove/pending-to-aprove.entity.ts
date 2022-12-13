@@ -9,6 +9,12 @@ enum type {
   PHRASE_TO_ANSWER = 'PHRASE_TO_ANSWER',
 }
 
+enum imageType {
+  V = 'V', // vertical
+  H = 'H', // horizontal
+  N = 'null',
+}
+
 @Schema()
 export class PendingToAprove {
   @Prop({ required: true, enum: type })
@@ -16,6 +22,9 @@ export class PendingToAprove {
 
   @Prop({ required: true })
   content: string;
+
+  @Prop({ enum: imageType, default: 'null' })
+  imageOrientation: string;
 
   @Prop({ required: true })
   uploadMode: string;

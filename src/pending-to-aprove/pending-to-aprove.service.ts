@@ -15,6 +15,7 @@ import axios from 'axios';
 import sharp from 'sharp';
 import { UploadService } from '../upload/upload.service';
 import { ApproveDTO } from './dto/approveDto';
+import sizeOf from 'image-size';
 
 @Injectable()
 export class PendingToAproveService {
@@ -45,8 +46,15 @@ export class PendingToAproveService {
         responseType: 'arraybuffer',
       });
 
+      const dimensions = await sizeOf(imageData);
+
+      const imageOrientation = dimensions.width > dimensions.height ? 'H' : 'V';
+
+      const width = imageOrientation === 'H' ? 320 : 200;
+      const height = imageOrientation === 'H' ? 200 : 320;
+
       const file = await sharp(imageData)
-        .resize(300, 300, {
+        .resize(width, height, {
           fit: 'fill',
           withoutEnlargement: true,
         })
@@ -65,6 +73,7 @@ export class PendingToAproveService {
         uploadMode: data.uploadMode,
         uploadedBy: data.uploadedBy,
         content: upload,
+        imageOrientation,
       });
       return register.save();
     } catch (error) {
@@ -87,6 +96,7 @@ export class PendingToAproveService {
           if (elementToAprove.type === 'IMAGE') {
             const image = await this.memeModel.create({
               url: elementToAprove.content,
+              imageOrientation: elementToAprove.imageOrientation,
             });
 
             const savedImage = await image.save();
