@@ -54,8 +54,10 @@ export class PendingToAproveService {
       const height = imageOrientation === 'H' ? 200 : 320;
 
       const file = await sharp(imageData)
-        .resize(width, height, {
-          fit: 'contain',
+        .resize({
+          width,
+          height,
+          fit: 'cover',
           withoutEnlargement: true,
         })
         .toFormat('webp')
