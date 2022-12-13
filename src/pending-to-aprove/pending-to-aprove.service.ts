@@ -55,7 +55,7 @@ export class PendingToAproveService {
 
       const file = await sharp(imageData)
         .resize(width, height, {
-          fit: 'fill',
+          fit: 'contain',
           withoutEnlargement: true,
         })
         .toFormat('webp')
