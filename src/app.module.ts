@@ -9,6 +9,7 @@ import { PhraseToCompleteModule } from './phrase-to-complete/phrase-to-complete.
 import { PendingToAproveModule } from './pending-to-aprove/pending-to-aprove.module';
 import { UploadModule } from './upload/upload.module';
 import { LoggerModule } from 'nestjs-pino';
+import { TelegramContributionModule } from './telegram-contribution/telegram-contribution.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { LoggerModule } from 'nestjs-pino';
     PhraseToCompleteModule,
     PendingToAproveModule,
     UploadModule,
+    TelegramContributionModule,
   ],
 })
 export class AppModule {}

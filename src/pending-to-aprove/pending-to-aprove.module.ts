@@ -9,11 +9,13 @@ import {
 import { Meme } from '../meme/meme.entity';
 import { MemeSchema } from '../meme/meme.entity';
 import { UploadModule } from '../upload/upload.module';
+import { TelegramContributionModule } from '../telegram-contribution/telegram-contribution.module';
 import {
   PhraseToAnswer,
   PhraseToAnswerSchema,
 } from '../phrase-to-answer/phrase-to-answer.entity';
 
+// TODO: Meme and phraseToAnswer must be module imports
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -21,6 +23,7 @@ import {
       { name: Meme.name, schema: MemeSchema },
       { name: PhraseToAnswer.name, schema: PhraseToAnswerSchema },
     ]),
+    TelegramContributionModule,
     UploadModule,
   ],
   providers: [PendingToAproveService],
