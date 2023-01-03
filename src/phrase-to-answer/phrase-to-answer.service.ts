@@ -16,4 +16,14 @@ export class PhraseToAnswerService {
   async get() {
     return this.phraseToAnswerModel.find();
   }
+
+  async getRandomBySize(size: number) {
+    return this.phraseToAnswerModel.aggregate([
+      {
+        $sample: {
+          size,
+        },
+      },
+    ]);
+  }
 }

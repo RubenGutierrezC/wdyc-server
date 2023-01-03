@@ -10,4 +10,14 @@ export class MemeService {
   async get() {
     return this.memeModel.find();
   }
+
+  async getRandomBySize(size: number) {
+    return this.memeModel.aggregate([
+      {
+        $sample: {
+          size,
+        },
+      },
+    ]);
+  }
 }

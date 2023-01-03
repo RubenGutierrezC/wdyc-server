@@ -17,6 +17,7 @@ import { UploadService } from '../upload/upload.service';
 import { ApproveDTO } from './dto/approveDto';
 import sizeOf from 'image-size';
 import { TelegramContributionService } from '../telegram-contribution/telegram-contribution.service';
+import { capitalize } from '../utils';
 
 @Injectable()
 export class PendingToAproveService {
@@ -87,59 +88,118 @@ export class PendingToAproveService {
 
   async approveById({ urls }: ApproveDTO) {
     try {
-      const elementToAprove = await this.pendingToAproveModel.find({
+      const elementsToAprove = await this.pendingToAproveModel.find({
         _id: { $in: urls },
       });
 
-      const result = await Promise.allSettled(
-        elementToAprove.map(async (elementToAprove) => {
-          try {
-            if (!elementToAprove) {
-              throw new NotFoundException('not found');
-            }
+      const result = [];
 
-            const response = {
-              message: '',
-              id: '',
-            };
-
-            if (elementToAprove.type === 'IMAGE') {
-              const image = await this.memeModel.create({
-                url: elementToAprove.content,
-                imageOrientation: elementToAprove.imageOrientation,
-              });
-
-              const savedImage = await image.save();
-
-              await elementToAprove.delete();
-
-              response.message = 'image saved';
-              response.id = savedImage._id.toString();
-            }
-
-            if (elementToAprove.type === 'PHRASE_TO_ANSWER') {
-              const phrase = await this.phraseToAnswerModel.create({
-                phrase: elementToAprove.content,
-              });
-
-              const savedPhrase = await phrase.save();
-
-              await elementToAprove.delete();
-
-              response.message = 'image saved';
-              response.id = savedPhrase._id.toString();
-            }
-
-            await this.telegramContributionService.addContribution(
-              elementToAprove.uploadedBy,
-            );
-
-            return response;
-          } catch (error) {
-            console.log(error);
+      for (const elementToAprove of elementsToAprove) {
+        try {
+          if (!elementToAprove) {
+            throw new NotFoundException('not found');
           }
-        }),
-      );
+
+          const response = {
+            message: '',
+            id: '',
+          };
+
+          if (elementToAprove.type === 'IMAGE') {
+            const image = await this.memeModel.create({
+              url: elementToAprove.content,
+              imageOrientation: elementToAprove.imageOrientation,
+            });
+
+            const savedImage = await image.save();
+
+            await elementToAprove.delete();
+
+            response.message = 'image saved';
+            response.id = savedImage._id.toString();
+          }
+
+          if (elementToAprove.type === 'PHRASE_TO_ANSWER') {
+            const phrase = await this.phraseToAnswerModel.create({
+              phrase: elementToAprove.content,
+            });
+
+            const savedPhrase = await phrase.save();
+
+            await elementToAprove.delete();
+
+            response.message = 'image saved';
+            response.id = savedPhrase._id.toString();
+          }
+
+          await this.telegramContributionService.addContribution(
+            elementToAprove.uploadedBy,
+          );
+
+          result.push(response);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+
+      return result;
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  async approveAll() {
+    try {
+      const elementsToAprove = await this.pendingToAproveModel.find();
+      const result = [];
+
+      for (const elementToAprove of elementsToAprove) {
+        try {
+          if (!elementToAprove) {
+            throw new NotFoundException('not found');
+          }
+
+          const response = {
+            message: '',
+            id: '',
+          };
+
+          if (elementToAprove.type === 'IMAGE') {
+            const image = await this.memeModel.create({
+              url: elementToAprove.content,
+              imageOrientation: elementToAprove.imageOrientation,
+            });
+
+            const savedImage = await image.save();
+
+            await elementToAprove.delete();
+
+            response.message = 'image saved';
+            response.id = savedImage._id.toString();
+          }
+
+          if (elementToAprove.type === 'PHRASE_TO_ANSWER') {
+            const phrase = await this.phraseToAnswerModel.create({
+              phrase: capitalize(elementToAprove.content),
+            });
+
+            const savedPhrase = await phrase.save();
+
+            await elementToAprove.delete();
+
+            response.message = 'image saved';
+            response.id = savedPhrase._id.toString();
+          }
+
+          await this.telegramContributionService.addContribution(
+            elementToAprove.uploadedBy,
+          );
+
+          result.push(response);
+        } catch (error) {
+          console.log(error);
+        }
+      }
 
       return result;
     } catch (error) {

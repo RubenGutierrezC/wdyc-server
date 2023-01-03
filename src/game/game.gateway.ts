@@ -23,7 +23,11 @@ import { GameService } from './game.service';
 import { Judge, Room } from './types';
 import { MemeService } from '../meme/meme.service';
 import { PhraseToAnswerService } from '../phrase-to-answer/phrase-to-answer.service';
-import { handleSocketResponse } from './game.utils';
+import {
+  handleSocketResponse,
+  getTotalCardsToPlayers,
+  fillCards,
+} from './game.utils';
 
 @WebSocketGateway({ cors: true })
 export class GameGateway
@@ -276,12 +280,20 @@ export class GameGateway
         });
       }
 
+      const { totalJudgeCards, totalPlayersCards } = getTotalCardsToPlayers({
+        rounds: 5,
+        players: players.length,
+        cardsPerPlayer: 7,
+      });
+
       // load cards to judge
-      const memes = await this.memeService.get();
+      const memes = await this.memeService.getRandomBySize(totalJudgeCards);
       const judgeCards = memes.map((m) => m.url);
 
       // load card to players
-      const phrases = await this.phraseToAnswerService.get();
+      const phrases = await this.phraseToAnswerService.getRandomBySize(
+        totalPlayersCards,
+      );
       const playerCards = phrases.map((p) => p.phrase);
 
       // get random judge
@@ -295,16 +307,34 @@ export class GameGateway
         receivedCards: [],
       };
 
+      const { filledCards, needRefill } = fillCards({
+        totalPlayersCards,
+        playerCards,
+      });
+
+      const copyFilledCards = [...filledCards];
       // set players cards
       decodedRoom.players.forEach((player) => {
-        player.cards = [...playerCards.slice(0, 8)];
+        let totalCards = 0;
+        while (totalCards < 7) {
+          const randomCardIndex = Math.floor(
+            Math.random() * filledCards.length,
+          );
+
+          if (!player.cards.some((c) => c === filledCards[randomCardIndex])) {
+            const card = filledCards.splice(randomCardIndex, 1)[0];
+
+            player.cards.push(card);
+            totalCards++;
+          }
+        }
       });
 
       decodedRoom = {
         ...decodedRoom,
         isStarted: true,
         judge,
-        playerCards,
+        playerCards: needRefill ? copyFilledCards : filledCards,
         judgeCards,
       };
 

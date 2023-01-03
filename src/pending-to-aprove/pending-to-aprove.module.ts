@@ -10,6 +10,7 @@ import { Meme } from '../meme/meme.entity';
 import { MemeSchema } from '../meme/meme.entity';
 import { UploadModule } from '../upload/upload.module';
 import { TelegramContributionModule } from '../telegram-contribution/telegram-contribution.module';
+import { EnvModule } from '../env/env.module';
 import {
   PhraseToAnswer,
   PhraseToAnswerSchema,
@@ -23,6 +24,7 @@ import {
       { name: Meme.name, schema: MemeSchema },
       { name: PhraseToAnswer.name, schema: PhraseToAnswerSchema },
     ]),
+    EnvModule,
     TelegramContributionModule,
     UploadModule,
   ],
