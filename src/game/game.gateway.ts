@@ -577,7 +577,38 @@ export class GameGateway
         username: decodedRoom.players[nextJudgeIndex].username,
       };
 
+      const oldJudge = decodedRoom.judge;
+
       decodedRoom.judge = newJudge;
+
+      for (const [index, player] of decodedRoom.players.entries()) {
+        if (player.username !== oldJudge.username) {
+          let cardSetted = false;
+
+          while (!cardSetted) {
+            const randomCardIndex = Math.floor(
+              Math.random() * decodedRoom.playerCards.length,
+            );
+
+            if (
+              !player.cards.some(
+                (c) => c === decodedRoom.playerCards[randomCardIndex],
+              )
+            ) {
+              const card = decodedRoom.playerCards.splice(
+                randomCardIndex,
+                1,
+              )[0];
+
+              decodedRoom.players[index].cards.push(card);
+              client.in(player.socketId).emit('new-card', {
+                card,
+              });
+              cardSetted = true;
+            }
+          }
+        }
+      }
 
       await this.redisService.updateRoom({
         roomCode,
