@@ -1,3 +1,4 @@
+import { judgeCard, ReceiveCard } from '../types';
 export interface SocketResponse<T> {
   message: string;
   data?: T;
@@ -57,8 +58,10 @@ export interface GetRoomInfoPayload {
 export interface GetRoomInfoResponse {
   players: { username: string; numberOfWins: number }[];
   cardsToSelect: string[];
+  playerCards: ReceiveCard[];
+  waitingForJudge: boolean;
   judge: {
     username: string;
-    card: string;
+    card: judgeCard;
   };
 }

@@ -50,7 +50,7 @@ export class GameGateway
     this.logger.log(`Client disconnected: ${client.id}`);
   }
 
-  handleConnection(client: Socket, ...args: any[]) {
+  handleConnection(client: Socket) {
     this.logger.log(`Client connected: ${client.id}`);
   }
 
@@ -69,7 +69,7 @@ export class GameGateway
 
       await this.redisService.createRoom({
         roomCode,
-        username: username,
+        username,
         socketId: client.id,
       });
 
@@ -176,11 +176,15 @@ export class GameGateway
 
       const isRoomCreator = decodedRoom.roomCreator === username;
 
+      const usernamePlayers = decodedRoom.players.map((p) => ({
+        username: p.username,
+      }));
+
       return handleSocketResponse({
         message: 'ok',
         data: {
           isRoomCreator,
-          players: decodedRoom.players,
+          players: usernamePlayers,
         },
       });
     } catch (error) {
@@ -229,7 +233,7 @@ export class GameGateway
         room: decodedRoom,
       });
 
-      client.in(roomCode).emit('player-leaves', {
+      this.server.in(roomCode).emit('player-leaves', {
         username: removedPlayer[0].username,
       });
 
@@ -251,7 +255,6 @@ export class GameGateway
     payload: any,
   ): Promise<SocketResponse<null>> {
     try {
-      this.logger.debug('start-game');
       const { roomCode } = payload;
 
       const room = await this.redisService.getRoomByKey(roomCode);
@@ -288,7 +291,10 @@ export class GameGateway
 
       // load cards to judge
       const memes = await this.memeService.getRandomBySize(totalJudgeCards);
-      const judgeCards = memes.map((m) => m.url);
+      const judgeCards = memes.map((m) => ({
+        url: m.url,
+        imageOrientation: m.imageOrientation,
+      }));
 
       // load card to players
       const phrases = await this.phraseToAnswerService.getRandomBySize(
@@ -341,7 +347,7 @@ export class GameGateway
       // modify game
       await this.redisService.updateRoom({ roomCode, room: decodedRoom });
 
-      client.in(roomCode).emit('move-to-game', null);
+      this.server.in(roomCode).emit('move-to-game', null);
 
       return handleSocketResponse({
         message: 'ok',
@@ -358,11 +364,10 @@ export class GameGateway
 
   @SubscribeMessage('get-room-info')
   async handleGetRoomInfo(
-    client: Socket,
+    _client: Socket,
     payload: any,
   ): Promise<SocketResponse<GetRoomInfoResponse>> {
     try {
-      this.logger.debug('get-room-info');
       const { roomCode, username } = payload;
 
       const room = await this.redisService.getRoomByKey(roomCode);
@@ -399,12 +404,23 @@ export class GameGateway
 
       const cardsToSelect = decodedRoom.players[playerIndex].cards;
 
+      const isJudge = judge.username === username;
+
+      const receivedCards = isJudge ? decodedRoom.judge.receivedCards : [];
+      const waitingForJudge =
+        decodedRoom.judge.receivedCards.length ===
+        decodedRoom.players.length - 1;
+      const round = decodedRoom.round;
+
       return handleSocketResponse({
         message: 'ok',
         data: {
           players,
           cardsToSelect,
           judge,
+          playerCards: receivedCards,
+          waitingForJudge,
+          round,
         },
       });
     } catch (error) {
@@ -420,10 +436,8 @@ export class GameGateway
   async handleSetCard(
     client: Socket,
     payload: any,
-  ): Promise<SocketResponse<any>> {
+  ): Promise<SocketResponse<null>> {
     try {
-      this.logger.debug('set-card');
-
       const { roomCode, username, card } = payload;
       const room = await this.redisService.getRoomByKey(roomCode);
 
@@ -469,7 +483,7 @@ export class GameGateway
 
       if (isRoundOver) {
         // send socket to all partcipants, the judge have to take the winner
-        client.to(roomCode).emit('all-players-ready');
+        this.server.to(roomCode).emit('all-players-ready');
 
         const judgeIndex = decodedRoom.players.findIndex(
           (p) => p.username === decodedRoom.judge.username,
@@ -490,7 +504,6 @@ export class GameGateway
 
       return handleSocketResponse({
         message: 'ok',
-        data: isRoundOver && 'all-players-ready',
       });
     } catch (error) {
       this.logger.error(error);
@@ -507,8 +520,6 @@ export class GameGateway
     payload: any,
   ): Promise<SocketResponse<any>> {
     try {
-      this.logger.debug('set-winner-card');
-
       const { roomCode, username, card } = payload;
       const room = await this.redisService.getRoomByKey(roomCode);
 
@@ -536,8 +547,7 @@ export class GameGateway
         (p) => p.username === card.username,
       );
 
-      client.broadcast.to(roomCode).emit('winner-card', winnerPlayer);
-      client.emit('winner-card', winnerPlayer);
+      this.server.to(roomCode).emit('winner-card', winnerPlayer);
 
       decodedRoom.players[winnerPlayerIndex].numberOfWins += 1;
       decodedRoom.round += 1;
@@ -571,8 +581,10 @@ export class GameGateway
       const nextJudgeIndex =
         judgeIndex + 1 === decodedRoom.players.length ? 0 : judgeIndex + 1;
 
+      decodedRoom.judgeCards.shift();
+
       const newJudge: Judge = {
-        card: decodedRoom.judgeCards[1],
+        card: decodedRoom.judgeCards[0],
         receivedCards: [],
         username: decodedRoom.players[nextJudgeIndex].username,
       };

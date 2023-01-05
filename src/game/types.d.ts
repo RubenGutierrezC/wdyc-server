@@ -7,8 +7,13 @@ export interface ReceiveCard {
   card: string;
 }
 
+interface judgeCard {
+  url: string;
+  imageOrientation: string;
+}
+
 export interface Judge {
-  card: string;
+  card: judgeCard;
   username: string;
   receivedCards: ReceiveCard[];
 }
@@ -25,7 +30,7 @@ export interface Room {
   config: Config;
   round: number;
   playerCards: string[];
-  judgeCards: string[];
+  judgeCards: judgeCard[];
   judge: Judge;
   winner: string;
   players: Player[];

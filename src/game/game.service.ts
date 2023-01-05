@@ -24,7 +24,10 @@ export class GameService {
       playerCards: [],
       judgeCards: [],
       judge: {
-        card: '',
+        card: {
+          url: '',
+          imageOrientation: '',
+        },
         username: '',
         receivedCards: [],
       },
