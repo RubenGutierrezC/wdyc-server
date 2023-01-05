@@ -51,7 +51,8 @@ export class PendingToAproveService {
 
       const dimensions = await sizeOf(imageData);
 
-      const imageOrientation = dimensions.width > dimensions.height ? 'H' : 'V';
+      const imageOrientation =
+        dimensions.width - dimensions.height > 200 ? 'H' : 'V';
 
       const width = imageOrientation === 'H' ? 320 : 200;
       const height = imageOrientation === 'H' ? 200 : 320;
